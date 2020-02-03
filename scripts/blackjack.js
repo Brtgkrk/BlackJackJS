@@ -33,10 +33,41 @@ class Player {
         }
         $("#" + elem + "-points").html("points: " + this.sum);
         console.log("The sum with aces of " + this.name + " is now " + this.sum);
-        if (this.sum == 21 && this.cards.length == 2) console.log("This is BLACKJACK! You won!");
-        else if (this.sum == 21) console.log("You won!");
-        else if (this.sum > 21) console.log("You Lose!");
+        if (this.sum == 21 && this.cards.length == 2) endGame(1, this.name);
+        else if (this.sum == 21) endGame(2, this.name);
+        else if (this.sum > 21) endGame(3, this.name);
     }
+}
+
+function endGame(index, who) {
+    let alertM = $("#alert-text");
+
+    switch (index) {
+        case 1:
+            alertM.html("This is BLACKJACK! " + who + " won!");
+            statistics.wins++;
+            break;
+        case 2:
+            alertM.html(who + " won!");
+            if (who == 'player') statistics.wins++;
+            else statistics.lost++;
+            break;
+        case 3:
+            alertM.html(who + " Lose!");
+            if (who == 'delaer') statistics.win++;
+            else statistics.lost++;
+            break;
+        case 4:
+            alertM.html("Dead Heat!");
+            break;
+
+        default:
+            alertM.html("Error, contct me: <a href='mailto:pomoc@jkrok.pl'>pomoc@jkrok.pl</a>");
+            break;
+    }
+    showStatistics();
+    inGame = false;
+    $("#alert-modal").modal('show');
 }
 
 function drawCard(cardsId, elem) {
@@ -55,21 +86,49 @@ function liftCard(num = 1) {
     return cards;
 }
 
-player = new Player('player');
-dealer = new Player('dealer');
-let inGame = false;
+function showStatistics() {
+    let proc = Math.round(statistics.wins / statistics.deals * 10000) / 100;
+    if (isNaN(proc)) proc = '';
+    else proc += '%!';
+    $("#statistics").html("Wins: " + statistics.wins + "  " + proc + "\nlost: " + statistics.lost + "\nDeals: " + statistics.deals);
+}
 
+let inGame = false;
+let statistics = { wins: 0, lost: 0, deals: 0 }
 
 $("#btn-deal").on('click', function () {
     startGame();
 });
 
 $("#btn-hit").on('click', function () {
-    if (inGame) player
+    if (inGame) player.addCards("player", liftCard());
+});
+
+$("#btn-stand").on('click', function () {
+    if (inGame) {
+        inGame = false;
+        dealer.addCards("dealer", liftCard());
+        console.log("Dealer 2nd card is " + dealer.cards[1]);
+        while (dealer.sum <= 16) {
+            dealer.addCards("dealer", liftCard());
+            console.log("Dealer draw");
+        }
+
+        if (player.sum > dealer.sum) endGame(2, "player");
+        else if (player.sum <= dealer.sum && dealer.sum > 21) endGame(2, 'player');
+        else if (player.sum == dealer.sum) endGame(4);
+        else if (player.sum < dealer.sum) endGame(3, "player");
+        else endGame(5);
+
+        showStatistics();
+    }
 });
 
 function startGame() {
-
+    statistics.deals++;
+    showStatistics();
+    player = new Player('player');
+    dealer = new Player('dealer');
 
     dealer.addCards("dealer", liftCard(1));
 
@@ -78,4 +137,5 @@ function startGame() {
 
     inGame = true;
 
+    player.addCards("player", liftCard(2));
 }

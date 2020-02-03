@@ -21,6 +21,12 @@ main
     z-index: 100;
 }
 
+#statistics
+{
+    font-size: 1.2em;
+    color: whitesmoke;
+}
+
 /* Buttons */
 .btn-bj
 {
