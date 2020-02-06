@@ -1,141 +1,152 @@
+let inGame = false, gameEnd = false;
+let statistics = { wins: 0, lost: 0, deals: 0 }
+
 class Player {
     constructor(name) {
         this.name = name;
         this.sum = 0;
         this.cards = new Array();
     }
-    addCards(elem, newCards) {
-        // Add cards to object
-        newCards.forEach(element => {
-            this.cards.push(element);
-        });
+    addCards(numOfCards = 1) {
+        // randomize and add new cards to the array
+        this.cards.push(...liftCard(numOfCards));
 
-        // Draw cards to the screen
-        drawCard(this.cards, elem)
-        console.log(this.cards);
+        // Draw cards onto screen
+        renderCards(this.cards, this.name)
 
+        // Check points
         let value = 0, aces = 0;
         this.sum = 0;
-
-        for (i = 0; i < this.cards.length; i++) { // iterate over all Player cards
-            if (this.cards[i] > 10) value = 10;
-            else if (this.cards[i] == 1) { aces++; value = 0; }
-            else value = this.cards[i];
+        this.cards.forEach(element => {
+            if (element >= 10) value = 10;
+            else if (element == 1) { aces++; value = 0; }
+            else value = element;
             this.sum += value;
-            console.log('adding ' + value);
-        }
-        console.log("The sum of " + this.name + " is now " + this.sum);
-
+        });
         while (aces >= 1) {
             if (this.sum + 11 > 21) { this.sum += 1; console.log('adding ace as 1'); }
             else { this.sum += 11; console.log('adding ace as 11'); }
             aces--;
         }
-        $("#" + elem + "-points").html("points: " + this.sum);
-        console.log("The sum with aces of " + this.name + " is now " + this.sum);
-        if (this.sum == 21 && this.cards.length == 2) endGame(1, this.name);
-        else if (this.sum == 21) endGame(2, this.name);
-        else if (this.sum > 21) endGame(3, this.name);
+
+        // Draw points onto screen
+        $("#" + this.name + "-points").html("points: " + this.sum);
+
+        // CheckPoints
+        checkPoints();
     }
 }
-
-function endGame(index, who) {
-    let alertM = $("#alert-text");
+// Checking if Player won/lose
+checkPoints = () => {
+    if (player.sum == 21 && player.cards.length == 2) endGame(3); // Player BJ
+    else if (player.sum == 21) endGame(2); // Player has sum of 21
+    else if (player.sum > 21) endGame(1); // Player exceeded total points
+    else if (dealer.sum > 21) { console.log("De"); endGame(2); } // Dealer exceeded total points
+}
+// Generetes cards into screen
+renderCards = (cardIds, elem) => {
+    let deck = "";
+    cardIds.forEach(element => {
+        if (element < 1 || element > 13) console.error("Invalid card ID: " + element);
+        else deck += "<div class= 'col-1' > <img src='images/cards/" + element + ".svg' alt='card" + element + "' class='play-card'> </div>"
+    });
+    $("#" + elem + "-deck").html(deck);
+}
+// Draws given number of cards
+liftCard = (num = 1) => {
+    cards = new Array();
+    for (let i = 0; i < num; i++) {
+        cards.push(Math.floor(Math.random() * 13) + 1);
+    }
+    return cards;
+}
+// Show player statistics in the screen
+showStatistics = () => {
+    let proc = Math.round(statistics.wins / statistics.deals * 10000) / 100;
+    if (isNaN(proc)) proc = '';
+    else proc += '%!';
+    $("#statistics").html("Wins: " + statistics.wins + "  " + proc + "\nlost: " + statistics.lost + "\nDeals: " + statistics.deals);
+}
+// Endgame alert, update stats
+endGame = (index) => {
+    const alertM = $("#alert-text");
 
     switch (index) {
         case 1:
-            alertM.html("This is BLACKJACK! " + who + " won!");
-            statistics.wins++;
+            alertM.html("Player Lost!");
+            statistics.lost++;
+            console.log('player lost');
             break;
         case 2:
-            alertM.html(who + " won!");
-            if (who == 'player') statistics.wins++;
-            else statistics.lost++;
+            alertM.html("Player Won!");
+            statistics.wins++;
+            console.log('player won');
             break;
         case 3:
-            alertM.html(who + " Lose!");
-            if (who == 'delaer') statistics.win++;
-            else statistics.lost++;
+            alertM.html("This is BLACKJACK, Player Won!");
+            statistics.wins++;
+            console.log('player won');
             break;
         case 4:
             alertM.html("Dead Heat!");
             break;
-
         default:
             alertM.html("Error, contct me: <a href='mailto:pomoc@jkrok.pl'>pomoc@jkrok.pl</a>");
             break;
     }
     showStatistics();
     inGame = false;
+    gameEnd = true;
+    console.log('kurwa');
+
     $("#alert-modal").modal('show');
 }
-
-function drawCard(cardsId, elem) {
-    let deck = "";
-    cardsId.forEach(element => {
-        if (element < 1 || element > 13) console.error("invalid card id: " + element);
-        deck += " <div class= 'col-1' > <img src='images/cards/" + element + ".svg' alt='card" + element + "' class='play-card'> </div>";
-    });
-    $("#" + elem + "-deck").html(deck);
-}
-
-function liftCard(num = 1) {
-    cards = new Array();
-    for (i = 0; i < num; i++)
-        cards.push(Math.floor(Math.random() * 13) + 1);
-    return cards;
-}
-
-function showStatistics() {
-    let proc = Math.round(statistics.wins / statistics.deals * 10000) / 100;
-    if (isNaN(proc)) proc = '';
-    else proc += '%!';
-    $("#statistics").html("Wins: " + statistics.wins + "  " + proc + "\nlost: " + statistics.lost + "\nDeals: " + statistics.deals);
-}
-
-let inGame = false;
-let statistics = { wins: 0, lost: 0, deals: 0 }
-
+// Buttons
 $("#btn-deal").on('click', function () {
     startGame();
 });
 
 $("#btn-hit").on('click', function () {
-    if (inGame) player.addCards("player", liftCard());
+    if (inGame) player.addCards();
 });
 
 $("#btn-stand").on('click', function () {
     if (inGame) {
         inGame = false;
-        dealer.addCards("dealer", liftCard());
+        dealer.addCards();
         console.log("Dealer 2nd card is " + dealer.cards[1]);
         while (dealer.sum <= 16) {
-            dealer.addCards("dealer", liftCard());
+            dealer.addCards();
             console.log("Dealer draw");
         }
+        //CheckEnd
+        console.log(gameEnd);
 
-        if (player.sum > dealer.sum) endGame(2, "player");
-        else if (player.sum <= dealer.sum && dealer.sum > 21) endGame(2, 'player');
-        else if (player.sum == dealer.sum) endGame(4);
-        else if (player.sum < dealer.sum) endGame(3, "player");
-        else endGame(5);
+        if (!gameEnd) {
+            console.log('end checking');
 
+            if (player.sum < dealer.sum) endGame(1);
+            else if (player.sum > dealer.sum) endGame(2);
+            else if (player.sum == dealer.sum) endGame(4);
+        }
         showStatistics();
     }
 });
-
-function startGame() {
+// Game Controller
+startGame = () => {
+    gameEnd = false;
     statistics.deals++;
     showStatistics();
     player = new Player('player');
     dealer = new Player('dealer');
+    console.log('----');
 
-    dealer.addCards("dealer", liftCard(1));
+    dealer.addCards();
 
     $("#dealer-deck").html($("#dealer-deck").html() + "<div class= 'col-1' > <img src='images/cards/0.svg' alt='card0' class='play-card'> </div>");
     $("#dealer-points").html("points: " + dealer.sum + " + ?");
 
     inGame = true;
 
-    player.addCards("player", liftCard(2));
+    player.addCards(2);
 }
